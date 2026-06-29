@@ -1,0 +1,7 @@
+[
+  {"id": "dev-01", "name": "Alice Chen", "role": "Developer", "status": "active", "joined": "2025-01-15"},
+  {"id": "intern-01", "name": "Bob Liu", "role": "Intern", "status": "active", "joined": "2026-06-01"},
+  {"id": "contractor-01", "name": "External-Dev-1", "role": "Contractor", "status": "active", "joined": "2025-12-01"},
+  {"id": "support-01", "name": "Carol Wang", "role": "Support Analyst", "status": "active", "joined": "2025-03-10"},
+  {"id": "ex-employee-01", "name": "Dave Zhang", "role": "Developer", "status": "inactive", "joined": "2024-06-01", "left": "2025-12-31"}
+]

@@ -1,0 +1,6 @@
+[
+  {"job_role": "Intern", "max_role": "Reader", "max_scope": "resource_group", "max_duration_days": 90, "production_access": false},
+  {"job_role": "Contractor", "max_role": "Contributor", "max_scope": "resource_group", "max_duration_days": 30, "production_access": false},
+  {"job_role": "Support Analyst", "max_role": "Reader", "max_scope": "resource_group", "max_duration_days": 90, "production_access": false},
+  {"job_role": "Developer", "max_role": "Contributor", "max_scope": "resource_group", "max_duration_days": 180, "production_access": false}
+]

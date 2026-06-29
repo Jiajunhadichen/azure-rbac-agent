@@ -1,0 +1,6 @@
+[
+  {"name": "rg-production", "environment": "production", "sensitivity": "high"},
+  {"name": "rg-development", "environment": "development", "sensitivity": "low"},
+  {"name": "rg-testing", "environment": "testing", "sensitivity": "medium"},
+  {"name": "rg-project-dev", "environment": "development", "sensitivity": "low"}
+]
