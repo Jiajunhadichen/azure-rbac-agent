@@ -397,44 +397,65 @@ elif page == "Risk Scan":
                 # Check status
                 db_status = get_remediation_status(subject, f["current_role"], f["current_scope"])
                 
-                render_html(f"""
-                    <div class="glass-card" style="border-left: 5px solid {'#ef4444' if risk_lvl=='Critical' else '#f97316'}; padding-bottom: 15px;">
-                        <div style="display:flex; justify-content:space-between; align-items:start;">
-                            <div>
-                                <span class="risk-badge risk-{risk_lvl.lower()}">Risk Level: {risk_lvl}</span>
-                                <h3 style="margin: 8px 0 2px 0;">{subject}</h3>
-                                <p style="color: #94a3b8; font-size: 14px; margin: 0;">User ID: <code>{f['user_id']}</code> | Role Assignment: <code>{f['current_role']}</code> @ <code>{f['current_scope']}</code></p>
-                            </div>
-                            <div>
-                                {f'<span style="background: rgba(22, 163, 74, 0.15); color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">Resolved</span>' if db_status == 'Approved' 
-                                  else f'<span style="background: rgba(234, 88, 12, 0.15); color: #ea580c; border: 1px solid rgba(234, 88, 12, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">Pending Approval</span>' if db_status == 'Pending'
-                                  else f'<span style="background: rgba(220, 38, 38, 0.15); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.3); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">Rejected</span>' if db_status == 'Rejected'
-                                  else ''}
-                            </div>
-                        </div>
-                        <div style="margin-top: 15px; padding: 10px; background: rgba(0, 0, 0, 0.15); border-radius: 6px; border: 1px solid rgba(255,255,255,0.03);">
-                            <strong>Risk Reason:</strong> {f['risk_reason']}
-                        </div>
-                        <div style="margin-top: 10px; font-size: 14px;">
-                            <strong>Recommended Remediation:</strong> {f.get('recommendation', 'Downgrade role to least privilege')} 
-                            <br/>
-                            <strong>Downgrade Scope:</strong> <code>{f['recommended_scope']}</code> | <strong>Downgrade Role:</strong> <code>{f['recommended_role']}</code> | <strong>Duration:</strong> {f['duration_days']} days
-                        </div>
-                    </div>
-                """)
-                
-                # Show remediation button if not started
-                if db_status == "Not_Started" or db_status == "Rejected":
-                    if st.button(f"Generate Remediation Plan for {subject}", key=f"remed-{idx}"):
-                        try:
-                            res = requests.post(f"{API_URL}/risk/remediate", json={"finding": f})
-                            if res.status_code == 200:
-                                st.success(f"Remediation plan generated for {subject}! Request entered the Approval Queue.")
-                                st.rerun()
-                            else:
-                                st.error("Failed to generate plan.")
-                        except Exception as e:
-                            st.error(f"Error: {e}")
+                with st.container(border=True):
+                    # Header row: Subject & Status badge / Risk Badge
+                    col_hdr1, col_hdr2 = st.columns([3, 1])
+                    with col_hdr1:
+                        st.markdown(f"### {subject}")
+                    with col_hdr2:
+                        # Status badge
+                        status_badge_colors = {
+                            "Approved": "🟢 **Resolved**",
+                            "Pending": "🟠 **Pending Approval**",
+                            "Rejected": "🔴 **Rejected**",
+                            "Not_Started": ""
+                        }
+                        status_str = status_badge_colors.get(db_status, "")
+                        if status_str:
+                            st.markdown(f"<div style='text-align: right;'>{status_str}</div>", unsafe_allow_html=True)
+                            
+                    # Sub-header: User ID, Current Role, Scope
+                    risk_colors = {
+                        "Critical": "🔴 **Critical Risk**",
+                        "High": "🟠 **High Risk**",
+                        "Medium": "🟡 **Medium Risk**",
+                        "Low": "🔵 **Low Risk**",
+                    }
+                    st.markdown(f"{risk_colors.get(risk_lvl, risk_lvl)} | **User ID:** `{f['user_id']}` | **Current Role:** `{f['current_role']}` @ `{f['current_scope']}`")
+                    
+                    st.markdown("---")
+                    
+                    # Risk Reason
+                    st.markdown("**Risk Reason**")
+                    st.warning(f['risk_reason'])
+                    
+                    st.markdown("---")
+                    
+                    # Recommendation Details
+                    st.markdown("**Recommended Remediation**")
+                    st.markdown(f"{f.get('recommendation', 'Downgrade role to least privilege')}")
+                    
+                    col_det1, col_det2, col_det3 = st.columns(3)
+                    with col_det1:
+                        st.markdown(f"**Downgrade Role:** `{f['recommended_role']}`")
+                    with col_det2:
+                        st.markdown(f"**Downgrade Scope:** `{f['recommended_scope']}`")
+                    with col_det3:
+                        st.markdown(f"**Duration:** {f['duration_days']} Days")
+                        
+                    # Show remediation button if not started or rejected
+                    if db_status == "Not_Started" or db_status == "Rejected":
+                        st.markdown(" ") # Spacer
+                        if st.button(f"Generate Remediation Plan for {subject}", key=f"remed-{idx}"):
+                            try:
+                                res = requests.post(f"{API_URL}/risk/remediate", json={"finding": f})
+                                if res.status_code == 200:
+                                    st.success(f"Remediation plan generated for {subject}! Request entered the Approval Queue.")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to generate plan.")
+                            except Exception as e:
+                                st.error(f"Error: {e}")
 
 # ==========================================
 # PAGE 4: APPROVAL QUEUE
@@ -585,39 +606,37 @@ elif page == "Audit Log":
                 # Build audit log grid
                 st.markdown(f"Showing **{len(logs)}** log entries:")
                 
-                # HTML Table for custom premium display
-                table_html = """
-                <table style="width:100%; border-collapse: collapse; font-size:14px; background: rgba(255,255,255,0.01);">
-                    <thead>
-                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); text-align:left; color:#94a3b8;">
-                            <th style="padding:12px;">Time</th>
-                            <th style="padding:12px;">Type</th>
-                            <th style="padding:12px;">Subject</th>
-                            <th style="padding:12px;">Action</th>
-                            <th style="padding:12px;">Result</th>
-                            <th style="padding:12px;">Operator</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                """
-                
-                for log in logs:
+                for idx, log in enumerate(logs):
                     timestamp = log["timestamp"][:19].replace("T", " ")
-                    status_class = f"status-{log['result'].lower()}" if log['result'] else ""
+                    result = log["result"] or "N/A"
+                    event_type = log["event_type"]
+                    subject = log["subject"]
+                    action = log["action"]
+                    operator = log["operator"]
                     
-                    table_html += f"""
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); hover: background-color: rgba(255,255,255,0.02);">
-                            <td style="padding:12px; color:#e2e8f0; white-space:nowrap;">{timestamp}</td>
-                            <td style="padding:12px; color:#cbd5e1;"><code>{log['event_type']}</code></td>
-                            <td style="padding:12px; font-weight:600; color:#ffffff;">{log['subject']}</td>
-                            <td style="padding:12px; color:#cbd5e1; font-size:13px;">{log['action']}</td>
-                            <td style="padding:12px;" class="{status_class}">{log['result']}</td>
-                            <td style="padding:12px; color:#94a3b8;">{log['operator']}</td>
-                        </tr>
-                    """
-                    
-                table_html += "</tbody></table>"
-                st.markdown(table_html, unsafe_allow_html=True)
+                    with st.container(border=True):
+                        col_l1, col_l2 = st.columns([3, 1])
+                        with col_l1:
+                            st.markdown(f"⏱️ **{timestamp}** | Operator: `{operator}`")
+                        with col_l2:
+                            st.markdown(f"<div style='text-align: right;'><code>{event_type}</code></div>", unsafe_allow_html=True)
+                        
+                        st.markdown("---")
+                        
+                        col_b1, col_b2 = st.columns([4, 1])
+                        with col_b1:
+                            st.markdown(f"**Subject:** {subject}")
+                            st.markdown(f"**Action Details:** {action}")
+                        with col_b2:
+                            # Color-coded badge for Result
+                            if result == "Approved":
+                                st.success("Approved ✅")
+                            elif result == "Rejected":
+                                st.error("Rejected ❌")
+                            elif result == "Pending":
+                                st.warning("Pending ⏳")
+                            else:
+                                st.info(result)
         else:
             st.error("Failed to load audit logs from API.")
     except Exception as e:
